@@ -236,69 +236,6 @@ Acesse:
 
 ---
 
-## 🐙 Passo a passo completo para publicar no GitHub
-
-Este pacote já vem com o repositório Git **inicializado localmente** (branch
-`main`, com commits do histórico do projeto). Falta só criar o repositório
-remoto no GitHub e enviar (`push`).
-
-### Opção A — Pelo site do GitHub
-
-1. Acesse [github.com/new](https://github.com/new)
-2. **Repository name**: `resume-ai`
-3. **Description** (sugestão):
-   > API com FastAPI + MongoDB (Beanie) que usa IA (Gemini) para avaliar currículos, com login e histórico por usuário — projeto de formatura CPDI
-4. Escolha **Public** (para constar no portfólio) ou **Private**
-5. **Não marque** nenhuma opção de "Add a README/.gitignore/license" — já temos todos
-6. Clique em **Create repository**
-7. O GitHub vai mostrar uma tela com comandos. Use a seção **"…or push an
-   existing repository from the command line"**:
-
-```bash
-cd resume-ai
-git remote add origin https://github.com/<seu-usuario>/resume-ai.git
-git push -u origin main
-```
-
-### Opção B — Pelo terminal com GitHub CLI (`gh`)
-
-Se tiver o [GitHub CLI](https://cli.github.com/) instalado e autenticado
-(`gh auth login`), o repositório remoto é criado e o push feito em um único
-comando:
-
-```bash
-cd resume-ai
-gh repo create resume-ai --public --source=. --remote=origin --push
-```
-
-### 5. Confirmar que subiu certo
-
-Acesse `https://github.com/<seu-usuario>/resume-ai` e confira se aparecem:
-- [ ] `README.md` renderizado na página inicial do repositório
-- [ ] As pastas `backend/`, `frontend/`, `postman/` e `.github/workflows/`
-- [ ] O arquivo `backend/.env` **não** aparece na lista (só o `.env.example`)
-- [ ] Aba **Actions** com o workflow `CI` rodando (✅ verde) — validação
-  automática de sintaxe, import da API e da collection do Postman a cada push
-
-> ⚠️ O `.env` real **nunca** é enviado ao GitHub (já está no `.gitignore`).
-> Cada integrante do grupo, ou o professor ao rodar o projeto, deve criar o
-> próprio `.env` a partir do `backend/.env.example`.
-
-### 6. Ajustar o badge do README
-
-No topo do `README.md`, troque `SEU-USUARIO` pelo usuário/organização real do
-GitHub para o badge de CI funcionar:
-
-```markdown
-![CI](https://github.com/<seu-usuario>/resume-ai/actions/workflows/ci.yml/badge.svg)
-```
-
-### 7. Convidar os colegas de grupo (opcional)
-No GitHub: **Settings → Collaborators → Add people** e adicione os outros
-integrantes para que todos possam commitar diretamente.
-
-### 8. Fluxo de trabalho em grupo (sugestão)
-
 ```bash
 # Antes de começar a mexer, sempre atualizar:
 git pull origin main
@@ -316,18 +253,6 @@ git push origin feature/exportar-pdf
 ```
 
 ---
-
-## 🎤 Roteiro sugerido para o pitch (3–5 min)
-
-1. **Grupo** (15s): quem são vocês.
-2. **Problema** (30s): candidatos não sabem se o currículo está bom antes de
-   enviar para uma vaga.
-3. **Solução** (30s): API + IA que dá nota e feedback instantâneo.
-4. **Demo ao vivo** (2 min): colar/enviar um currículo real, mostrar nota,
-   pontos fortes/fracos, palavras-chave e dicas aparecendo na tela.
-5. **Stack técnica** (30s): FastAPI, Pydantic, MongoDB/Beanie, Gemini —
-   arquitetura pronta para trocar de provedor de IA.
-6. **Próximos passos** (15s): multilinguagem, comparação com vaga, exportar PDF.
 
 ---
 
