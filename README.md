@@ -316,19 +316,7 @@ git push origin feature/exportar-pdf
 ```
 
 ---
-```bash
-## 🎤 Roteiro sugerido para o pitch (3–5 min)
 
-1. **Grupo** (15s): quem são vocês.
-2. **Problema** (30s): candidatos não sabem se o currículo está bom antes de
-   enviar para uma vaga.
-3. **Solução** (30s): API + IA que dá nota e feedback instantâneo.
-4. **Demo ao vivo** (2 min): colar/enviar um currículo real, mostrar nota,
-   pontos fortes/fracos, palavras-chave e dicas aparecendo na tela.
-5. **Stack técnica** (30s): FastAPI, Pydantic, MongoDB/Beanie, Gemini —
-   arquitetura pronta para trocar de provedor de IA.
-6. **Próximos passos** (15s): multilinguagem, comparação com vaga, exportar PDF.
-```
 ---
 
 ## 🗺️ Próximos passos (backlog)
