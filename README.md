@@ -316,7 +316,7 @@ git push origin feature/exportar-pdf
 ```
 
 ---
-
+```bash
 ## 🎤 Roteiro sugerido para o pitch (3–5 min)
 
 1. **Grupo** (15s): quem são vocês.
@@ -328,7 +328,7 @@ git push origin feature/exportar-pdf
 5. **Stack técnica** (30s): FastAPI, Pydantic, MongoDB/Beanie, Gemini —
    arquitetura pronta para trocar de provedor de IA.
 6. **Próximos passos** (15s): multilinguagem, comparação com vaga, exportar PDF.
-
+```
 ---
 
 ## 🗺️ Próximos passos (backlog)
