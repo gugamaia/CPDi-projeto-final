@@ -1,0 +1,348 @@
+{
+  "info": {
+    "name": "Resume AI - Fluxo completo",
+    "description": "Testa o fluxo ponta a ponta da API Resume AI: cadastro → login → avaliação de currículo (Gemini) → histórico → busca/remoção. Cada request salva variáveis (token, resume_id) automaticamente para a próxima, então dá para rodar tudo com o Collection Runner.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000", "type": "string" },
+    { "key": "userEmail", "value": "", "type": "string" },
+    { "key": "userPassword", "value": "SenhaForte123", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "resumeId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Cadastro (Register)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Gera um e-mail único a cada execução para não bater com cadastro existente",
+              "pm.collectionVariables.set('userEmail', `teste.${Date.now()}@resumeai.dev`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 - conta criada', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const data = pm.response.json();",
+              "",
+              "pm.test('Resposta contém access_token', function () {",
+              "  pm.expect(data.access_token).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "pm.test('Usuário retornado tem o e-mail cadastrado', function () {",
+              "  pm.expect(data.user.email).to.eql(pm.collectionVariables.get('userEmail'));",
+              "});",
+              "",
+              "if (data.access_token) {",
+              "  pm.collectionVariables.set('accessToken', data.access_token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Usuário de Teste\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "register"]
+        },
+        "description": "Cria a conta do usuário. Já retorna o token JWT (não é necessário logar em seguida, mas o próximo request faz isso mesmo assim para validar o /login)."
+      }
+    },
+    {
+      "name": "2. Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200 - login OK', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const data = pm.response.json();",
+              "",
+              "pm.test('Resposta contém access_token', function () {",
+              "  pm.expect(data.access_token).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "if (data.access_token) {",
+              "  pm.collectionVariables.set('accessToken', data.access_token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "Autentica com o e-mail/senha criados no passo anterior e atualiza o token salvo na collection."
+      }
+    },
+    {
+      "name": "3. Usuário logado (Me)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const data = pm.response.json();",
+              "",
+              "pm.test('E-mail bate com o usuário logado', function () {",
+              "  pm.expect(data.email).to.eql(pm.collectionVariables.get('userEmail'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "me"]
+        },
+        "description": "Confirma que o token retornado no login é válido e identifica o usuário certo."
+      }
+    },
+    {
+      "name": "4. Avaliar currículo (texto)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const data = pm.response.json();",
+              "",
+              "pm.test('Avaliação tem nota entre 0 e 100', function () {",
+              "  pm.expect(data.evaluation.score).to.be.a('number');",
+              "  pm.expect(data.evaluation.score).to.be.within(0, 100);",
+              "});",
+              "",
+              "pm.test('Avaliação pertence ao usuário logado', function () {",
+              "  pm.expect(data.owner_id).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "pm.test('Contém pontos fortes, fracos e dicas', function () {",
+              "  pm.expect(data.evaluation.strengths).to.be.an('array');",
+              "  pm.expect(data.evaluation.weaknesses).to.be.an('array');",
+              "  pm.expect(data.evaluation.improvement_tips).to.be.an('array');",
+              "});",
+              "",
+              "if (data.id) {",
+              "  pm.collectionVariables.set('resumeId', data.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Maria Silva\\nDesenvolvedora Backend Python\\n\\nExperiência:\\n- 2 anos como estagiária de desenvolvimento em uma fintech, atuando com Python, Django e PostgreSQL.\\n- Participação em projeto de migração de monólito para microsserviços.\\n\\nFormação:\\n- Análise e Desenvolvimento de Sistemas (cursando, previsão de formatura em 2026).\\n\\nHabilidades:\\n- Python, Django, SQL, Git, lógica de programação.\\n\\nIdiomas:\\n- Inglês intermediário.\",\n  \"target_role\": \"Desenvolvedor Backend Python Júnior\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/resumes/evaluate/text",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resumes", "evaluate", "text"]
+        },
+        "description": "Envia um currículo de exemplo como texto colado. A IA (Gemini) avalia e a API salva o resultado no histórico do usuário logado. O 'id' retornado é salvo para os próximos passos."
+      }
+    },
+    {
+      "name": "5. Meu histórico",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const data = pm.response.json();",
+              "",
+              "pm.test('Histórico é uma lista com pelo menos 1 item', function () {",
+              "  pm.expect(data).to.be.an('array').with.lengthOf.at.least(1);",
+              "});",
+              "",
+              "pm.test('Histórico contém a avaliação recém-criada', function () {",
+              "  const ids = data.map(item => item.id);",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('resumeId'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/resumes/me/history?limit=50",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resumes", "me", "history"],
+          "query": [{ "key": "limit", "value": "50" }]
+        },
+        "description": "Lista o histórico de avaliações do usuário logado. Confirma que a avaliação feita no passo 4 está lá."
+      }
+    },
+    {
+      "name": "6. Buscar avaliação por ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const data = pm.response.json();",
+              "",
+              "pm.test('ID retornado é o mesmo salvo anteriormente', function () {",
+              "  pm.expect(data.id).to.eql(pm.collectionVariables.get('resumeId'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/resumes/{{resumeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resumes", "{{resumeId}}"]
+        },
+        "description": "Busca a avaliação específica pelo id salvo no passo 4."
+      }
+    },
+    {
+      "name": "7. Acesso sem token (deve falhar)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 401 - bloqueado sem token', function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/resumes/me/history",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resumes", "me", "history"]
+        },
+        "description": "Confirma que o histórico é protegido: sem o header Authorization, a API deve recusar com 401."
+      }
+    },
+    {
+      "name": "8. Remover avaliação do histórico",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 204 - removido', function () {",
+              "  pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/resumes/{{resumeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resumes", "{{resumeId}}"]
+        },
+        "description": "Remove a avaliação de teste do histórico."
+      }
+    },
+    {
+      "name": "9. Confirma remoção (deve retornar 404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404 - não encontrado após remoção', function () {",
+              "  pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/resumes/{{resumeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "resumes", "{{resumeId}}"]
+        },
+        "description": "Confirma que o item deletado no passo 8 realmente não existe mais no histórico do usuário."
+      }
+    }
+  ]
+}
